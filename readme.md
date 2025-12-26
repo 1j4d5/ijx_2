@@ -8,11 +8,13 @@ and then run it on vm
 ```bash
 qemu-system-i386 -fda build/main_floppy.img
 ```            
-## current progress
-    * [x] Created the empty os layout 
-    * [x] BIOS Change to 16bit
-    * [x] welcome to life: IJx 2!
-    * [ ] Change from floppy to disk (remove 512 restriction)
+# Current Progress
+
+- [x] Created the empty OS layout
+- [x] BIOS Change to 16bit
+- [x] Welcome to life: IJx 2!
+- [ ] Change from floppy to disk (remove 512 restriction)
+
     
 # below is some common data addresses that i'll be using a lot
 ---
