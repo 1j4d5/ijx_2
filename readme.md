@@ -1,6 +1,6 @@
 # IJx 2
 ---
-To run and compile run: 
+To ompile run: 
 ```bash
 make
 ```
