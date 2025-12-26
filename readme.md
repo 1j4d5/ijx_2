@@ -1,3 +1,14 @@
+# IJx 2
+---
+To run and compile run: 
+```bash
+make
+```
+and then run it on vm
+```bash
+qemu-system-i386 -fda build/main_floppy.img
+```            
+
 # below is some common data addresses that i'll be using a lot
 ---
 # CPU Registers (x86 / x86-64)
