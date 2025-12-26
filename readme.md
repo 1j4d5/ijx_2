@@ -1,3 +1,5 @@
+# below is some common data addresses that i'll be using a lot
+---
 # CPU Registers (x86 / x86-64)
 
 This document summarizes **x86 / x86-64 CPU registers**, their purposes, and relevant control, debug, and protected-mode structures.
