@@ -94,3 +94,19 @@ mov reg, cr0
 ; LMSW / SMSW method
 lmsw reg
 smsw reg
+```
+
+---
+
+## Common BIOS Interrupts
+
+| Interrupt | Purpose |
+|---|---|
+| INT 10h | Video services |
+| INT 11h | Equipment check |
+| INT 12h | Memory size |
+| INT 13h | Disk services |
+| INT 14h | Serial services |
+| INT 15h | System services |
+| INT 16h | Keyboard services |
+
