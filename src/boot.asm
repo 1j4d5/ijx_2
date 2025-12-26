@@ -10,4 +10,4 @@ main:
     jmp .halt               ; infinite loop if the cpu resumes after hlt
 
 times 510-($-$$) db 0       ; 510-(size of the file) * 0 so it fills with 0s
-dw 0xAA55
+dw 0xAA55                   ; boot signature
