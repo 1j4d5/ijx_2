@@ -180,8 +180,8 @@ smsw reg
 ### LBA to CHS convertion 
 - sector per track/cylinder (on a single side)
 - heads per cylinder (or jst heads)
-
-sector = (LBA % sector per track)+1
-head = (LBA / sector per track) % heads
-cylinder = (LBA/sectors per track) / heads
+---
+- sector = (LBA % sector per track)+1
+- head = (LBA / sector per track) % heads
+- cylinder = (LBA/sectors per track) / heads
 
