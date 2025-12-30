@@ -13,7 +13,7 @@ qemu-system-i386 -fda build/main_floppy.img
 - [x] Created the empty OS layout
 - [x] BIOS Change to 16bit
 - [x] Welcome to life: IJx 2!
-- [ ] Change to disk (adding disk register bits so it support FAT)
+- [x] Change to disk (adding disk register bits so it support FAT)
 - [ ] Setting up FAT12 with FAT registers
  
 **NOTE:** ERROR ON BOOTLOADER THE BOOTLOADER GET STUCK (PROLLY MEMORY ISSUES (IWILL FIX IT LATER))
