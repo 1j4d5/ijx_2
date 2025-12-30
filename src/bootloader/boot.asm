@@ -59,25 +59,28 @@ puts:
     pop si                  ; restore si
     ret                     ; return from puts
 main:
-                            ; setup data segment
-    mov ax, 0               ; set ax to 0 because we want to set ds and es to 0  
+    ; setup segments
+    mov ax, 0
     mov ds, ax
     mov es, ax
-                            ; setting stack segment to o 
     mov ss, ax
-    mov sp, 0x7C00          ; setting stack pointer to (0x7COO)start stack grows downwards: follows FIFO(first in first out)     
+    mov sp, 0x7C00
 
+    ; store drive number from BIOS (passed in dl)
     mov [ebr_drive_number], dl
-    mov ax, 1
-    mov cl, 1
-    mov bx, 0x7E00
+
+    ; attempt to read sector 1 (the sector after the bootloader)
+    mov ax, 1                           ; LBA 1
+    mov cl, 1                           ; 1 sector
+    mov bx, 0x7E00                      ; destination: immediately after bootloader
     call disk_read
 
-                            ; print welcome message
+    ; print welcome message
+    mov si, msg_hello
+    call puts
 
-    mov si, msg_hello       ; load address of msg_hello into si                          
-    call puts               ; call puts to print the message                  
-    hlt                     ; halt the CPU  
+    cli                                 ; disable interrupts before halting
+    hlt          ; halt the CPU  
 
 floppy_error:
     mov si, msg_read_failed ; load address of floppy error message into si
@@ -112,28 +115,28 @@ wait_key_and_reboot:
 ;       dh: head
 
 lba_to_chs:
-    push ax              ; save ax
-    push dx              ; save dx
+    push ax
+    push dx
 
-    xor dx, dx           ; clear dx or dx=0
-    div word [bdb_sectors_per_track] ; ax=LBA /  sectors per track
-                                        ;dx = LBA % sectors per track
-    inc dx               ; dx= LBA / sectorpertrack  + 1
-    mov cx, dx          ; move remainder to cx (sector number) cx = sector number
+    xor dx, dx                          ; prepare dx:ax for division
+    div word [bdb_sectors_per_track]    ; ax = LBA / SPT, dx = LBA % SPT
+    
+    inc dx                              ; Sector = (LBA % SPT) + 1
+    mov cx, dx                          ; cx = sector (bits 0-5)
 
-    xor dx, dx          ; clear dx
-    div word [bdb_heads] ; ax = (LBA / sector per traack) / heads
-                            ; dx = (LBA / sector per track) % heads
+    xor dx, dx                          ; prepare dx:ax
+    div word [bdb_heads]                ; ax = cylinder, dx = head
 
-    ; seting the values to correct registers
-    mov dh, dl          ; head number to dh
-    mov cl, al          ; cylinder number to cl (lower 8 bits)
-    shl ah, 6         ; shift upper 2 bits of cylinder number to upper bits of ah
-    or cl, ah          ; combine lower and upper bits of cylinder number
+    ; Now: ax = cylinder, dx = head, cx = sector
+    mov dh, dl                          ; dh = head number
+    mov ch, al                          ; ch = cylinder lower 8 bits
+    shl ah, 6                           ; move top 2 bits of cylinder to bits 6-7
+    or cl, ah                           ; combine with sector bits
+
     pop ax
-    mov dl, al
-    pop dx
-    ret                    ; return from lba_to_chs 
+    mov dl, al                          ; restore drive number into dl (from original push ax/dx logic)
+    pop ax                              ; cleaning up the stack correctly
+    ret
 
 
 ; 
@@ -145,46 +148,41 @@ lba_to_chs:
 ;  es:bx: pointer to buffer to read into (memory address where to store data)
 ;
 disk_read:
-    push ax               ; save ax (LBA address)
-    push bx              ; save bx (buffer pointer)
-    push cx             ; save cx (number of sectors to read)
-    push dx              ; save dx (drive number)
-    push di              ; save di (retry count)
+    push ax                             ; save registers
+    push bx
+    push cx
+    push dx
+    push di
 
-    push cx              ; save cx (temp save cl:number of sectors to read)
-    call lba_to_chs      ; convert LBA to CHS
-    pop ax               ; restore ax (LBA address) AL = number of sectors to read
-    mov ah, 02h          ; BIOS read sectors function
-    mov di, 3           ; retry count
-
+    push cx                             ; save sector count (cl)
+    call lba_to_chs                     ; convert LBA (ax) to CHS
+    pop ax                              ; al = number of sectors to read
+    mov ah, 02h                         ; BIOS read function
+    mov di, 3                           ; retry count
 
 .retry:
-    pusha           ; save all registers 
-    stc               ; set carry flag before calling BIOS (some BIOS require it)
-    int 13h              ; call BIOS disk interrupt | if the carry flag is cleard, the operation was successful
-    jnc .done         ; if no error, we are done
-    ;failed to read, retry
+    pusha                               ; save all registers for the BIOS call
+    stc                                 ; some BIOS need carry set
+    int 13h                             ; BIOS interrupt
+    jnc .done                           ; if carry clear, success!
 
-    popa              ; restore all registers
-    call disk_read
-
-    dec di        ; decrement retry count
-    test di, di      ; check if retry count is 0
-    jnz .retry       ; if not zero, retry
-
+    ; Failed:
+    popa                                ; restore registers to try again
+    call disk_reset                     ; reset disk controller
+    dec di
+    jnz .retry                          ; loop back to .retry, not a recursive call
 
 .fail:
-    ; handle failure (could print error message or halt) all attempts are exhausted
-    jmp floppy_error    
-.done:
-    popa          ; restore all registers
-    pop di              ; restore ax (LBA address)
-    pop dx              ; restore bx (buffer pointer)
-    pop cx             ; restore cx (number of sectors to read)
-    pop bx              ; restore dx (drive number)
-    pop ax              ; restore di (retry count)
-    ret                 ; return from disk_read
+    jmp floppy_error                    ; after 3 attempts, give up
 
+.done:
+    popa                                ; restore the pusha from the loop
+    pop di                              ; restore original registers in REVERSE order
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
 ;
 ; DISK reset controller
 ;
